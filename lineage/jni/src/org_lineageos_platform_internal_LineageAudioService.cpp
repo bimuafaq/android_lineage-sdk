@@ -143,7 +143,7 @@ exit:
 
 // ----------------------------------------------------------------------------
 
-static JNINativeMethod gMethods[] = {
+static const JNINativeMethod gMethods[] = {
      {"native_listAudioSessions", "(ILjava/util/ArrayList;)I",
             (void *)org_lineageos_platform_internal_LineageAudioService_listAudioSessions},
      {"native_registerAudioSessionCallback", "(Z)V",
