@@ -3135,6 +3135,26 @@ public final class LineageSettings {
         public static final Validator NETWORK_TRAFFIC_SHOW_UNITS_VALIDATOR = sBooleanValidator;
 
         /**
+         * Layout mode for network traffic
+         * 0 = Vertical
+         * 1 = Horizontal
+         * @hide
+         */
+        public static final String NETWORK_TRAFFIC_LAYOUT = "network_traffic_layout";
+
+        /** @hide */
+        public static final Validator NETWORK_TRAFFIC_LAYOUT_VALIDATOR = sBooleanValidator;
+
+        /**
+         * Whether to show activity arrows
+         * @hide
+         */
+        public static final String NETWORK_TRAFFIC_SHOW_ARROW = "network_traffic_show_arrow";
+
+        /** @hide */
+        public static final Validator NETWORK_TRAFFIC_SHOW_ARROW_VALIDATOR = sBooleanValidator;
+
+        /**
          * Enable displaying the Trust service's notifications
          * 0 = 0ff, 1 = on
          * @deprecated Rely on {@link lineageos.providers.TRUST_WARNINGS} instead
@@ -3300,6 +3320,8 @@ public final class LineageSettings {
             VALIDATORS.put(NETWORK_TRAFFIC_AUTOHIDE, NETWORK_TRAFFIC_AUTOHIDE_VALIDATOR);
             VALIDATORS.put(NETWORK_TRAFFIC_UNITS, NETWORK_TRAFFIC_UNITS_VALIDATOR);
             VALIDATORS.put(NETWORK_TRAFFIC_SHOW_UNITS, NETWORK_TRAFFIC_SHOW_UNITS_VALIDATOR);
+            VALIDATORS.put(NETWORK_TRAFFIC_LAYOUT, NETWORK_TRAFFIC_LAYOUT_VALIDATOR);
+            VALIDATORS.put(NETWORK_TRAFFIC_SHOW_ARROW, NETWORK_TRAFFIC_SHOW_ARROW_VALIDATOR);
             VALIDATORS.put(TETHERING_ALLOW_VPN_UPSTREAMS, TETHERING_ALLOW_VPN_UPSTREAMS_VALIDATOR);
             VALIDATORS.put(TRUST_NOTIFICATIONS, TRUST_NOTIFICATIONS_VALIDATOR);
             VALIDATORS.put(TRUST_RESTRICT_USB_KEYGUARD, TRUST_RESTRICT_USB_KEYGUARD_VALIDATOR);
