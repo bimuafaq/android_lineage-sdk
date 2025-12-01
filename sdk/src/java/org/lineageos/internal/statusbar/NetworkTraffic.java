@@ -5,7 +5,7 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      http://www.apache.org/licenses/LICENSE-2.0
+ * http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -27,6 +27,7 @@ import android.graphics.Color;
 import android.graphics.drawable.Drawable;
 import android.graphics.PorterDuff;
 import android.graphics.Rect;
+import android.graphics.Typeface;
 import android.net.ConnectivityManager;
 import android.net.LinkProperties;
 import android.net.Network;
@@ -41,9 +42,16 @@ import android.os.RemoteException;
 import android.os.ServiceManager;
 import android.os.SystemClock;
 import android.os.UserHandle;
+import android.text.SpannableString;
+import android.text.Spanned;
+import android.text.style.RelativeSizeSpan;
+import android.text.style.StyleSpan;
+import android.text.style.TypefaceSpan;
 import android.util.AttributeSet;
+import android.util.DisplayMetrics;
 import android.util.Log;
 import android.util.TypedValue;
+import android.view.Gravity;
 import android.view.View;
 import android.widget.TextView;
 
@@ -52,6 +60,7 @@ import lineageos.providers.LineageSettings;
 import org.lineageos.platform.internal.R;
 
 import java.util.HashMap;
+import java.util.Locale;
 
 public class NetworkTraffic extends TextView {
     private static final String TAG = "NetworkTraffic";
@@ -75,7 +84,6 @@ public class NetworkTraffic extends TextView {
     private static final int UNITS_KILOBYTES = 2;
     private static final int UNITS_MEGABYTES = 3;
 
-    // Thresholds themselves are always defined in kbps
     private static final long AUTOHIDE_THRESHOLD_KILOBITS  = 10;
     private static final long AUTOHIDE_THRESHOLD_MEGABITS  = 100;
     private static final long AUTOHIDE_THRESHOLD_KILOBYTES = 8;
@@ -90,21 +98,21 @@ public class NetworkTraffic extends TextView {
     private long mLastUpdateTime;
     private int mTextSizeSingle;
     private int mTextSizeMulti;
+    private int mArrowPadding;
     private boolean mAutoHide;
     private long mAutoHideThreshold;
     private int mUnits;
     private boolean mShowUnits;
+    private boolean mLayoutHorizontal;
+    private boolean mShowArrow;
     private int mDarkModeFillColor;
     private int mLightModeFillColor;
     private int mIconTint = Color.WHITE;
     private SettingsObserver mObserver;
     private Drawable mDrawable;
 
-    // Network tracking related variables
     private final ConnectivityManager mConnectivityManager;
     private final HashMap<Network, LinkProperties> mLinkPropertiesMap = new HashMap<>();
-    // Used to indicate that the set of sources contributing
-    // to current stats have changed.
     private boolean mNetworksChanged = true;
 
     private INetworkManagementService mNetworkManagementService;
@@ -126,6 +134,9 @@ public class NetworkTraffic extends TextView {
         final Resources resources = getResources();
         mTextSizeSingle = resources.getDimensionPixelSize(R.dimen.net_traffic_single_text_size);
         mTextSizeMulti = resources.getDimensionPixelSize(R.dimen.net_traffic_multi_text_size);
+        
+        DisplayMetrics metrics = resources.getDisplayMetrics();
+        mArrowPadding = (int) TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, 2f, metrics);
 
         mNetworkTrafficIsVisible = false;
 
@@ -137,6 +148,9 @@ public class NetworkTraffic extends TextView {
                 .addCapability(NetworkCapabilities.NET_CAPABILITY_NOT_VPN)
                 .build();
         mConnectivityManager.registerNetworkCallback(request, mNetworkCallback);
+
+        setGravity(Gravity.CENTER);
+        setLineSpacing(0, 0.80f);
     }
 
     private LineageStatusBarItem.DarkReceiver mDarkReceiver =
@@ -216,10 +230,8 @@ public class NetworkTraffic extends TextView {
             if (timeDelta < REFRESH_INTERVAL * 0.95f) {
                 return;
             }
-            // Sum tx and rx bytes from all sources of interest
             long txBytes = 0;
             long rxBytes = 0;
-            // Add interface stats
             for (LinkProperties linkProperties : mLinkPropertiesMap.values()) {
                 final String iface = linkProperties.getInterfaceName();
                 if (iface == null) {
@@ -235,8 +247,6 @@ public class NetworkTraffic extends TextView {
                 rxBytes += ifaceRxBytes;
             }
 
-            // Add tether hw offload counters since these are
-            // not included in netd interface stats.
             final TetheringStats tetheringStats = getOffloadTetheringStats();
             txBytes += tetheringStats.txBytes;
             rxBytes += tetheringStats.rxBytes;
@@ -265,46 +275,41 @@ public class NetworkTraffic extends TextView {
 
         private void displayStatsAndReschedule() {
             final boolean enabled = mMode != MODE_DISABLED && isConnectionAvailable();
-            final boolean showUpstream =
-                    mMode == MODE_UPSTREAM_ONLY || mMode == MODE_UPSTREAM_AND_DOWNSTREAM;
-            final boolean showDownstream =
-                    mMode == MODE_DOWNSTREAM_ONLY || mMode == MODE_UPSTREAM_AND_DOWNSTREAM;
-            final boolean shouldHide = mAutoHide && (!showUpstream || mTxKbps < mAutoHideThreshold)
-                    && (!showDownstream || mRxKbps < mAutoHideThreshold);
+            
+            long speedToShow = 0;
+            if (mMode == MODE_UPSTREAM_ONLY) {
+                speedToShow = mTxKbps;
+            } else if (mMode == MODE_DOWNSTREAM_ONLY) {
+                speedToShow = mRxKbps;
+            } else {
+                speedToShow = mTxKbps + mRxKbps;
+            }
+
+            boolean shouldHide = false;
+            if (mAutoHide) {
+                 shouldHide = speedToShow < mAutoHideThreshold;
+            }
 
             if (!enabled || shouldHide) {
                 setText("");
                 setVisibility(GONE);
             } else {
-                // Get information for uplink ready so the line return can be added
-                StringBuilder output = new StringBuilder();
-                if (showUpstream) {
-                    output.append(formatOutput(mTxKbps));
-                }
+                CharSequence output = formatOutput(speedToShow);
 
-                // Ensure text size is where it needs to be
-                int textSize;
-                if (showUpstream && showDownstream) {
-                    output.append("\n");
-                    textSize = mTextSizeMulti;
-                } else {
-                    textSize = mTextSizeSingle;
-                }
-
-                // Add information for downlink if it's called for
-                if (showDownstream) {
-                    output.append(formatOutput(mRxKbps));
-                }
-
-                // Update view if there's anything new to show
                 if (!output.toString().contentEquals(getText())) {
-                    setTextSize(TypedValue.COMPLEX_UNIT_PX, (float) textSize);
-                    setText(output.toString());
+                    setText(output);
+                    
+                    if (mLayoutHorizontal || !mShowUnits) {
+                        setTextSize(TypedValue.COMPLEX_UNIT_PX, (float) mTextSizeSingle);
+                    } else {
+                        setTextSize(TypedValue.COMPLEX_UNIT_PX, (float) mTextSizeMulti);
+                    }
                 }
+
+                updateTrafficDrawable();
                 setVisibility(VISIBLE);
             }
 
-            // Schedule periodic refresh
             mTrafficHandler.removeMessages(MESSAGE_TYPE_PERIODIC_REFRESH);
             if (enabled && mNetworkTrafficIsVisible) {
                 mTrafficHandler.sendEmptyMessageDelayed(MESSAGE_TYPE_PERIODIC_REFRESH,
@@ -312,36 +317,104 @@ public class NetworkTraffic extends TextView {
             }
         }
 
-        private String formatOutput(long kbps) {
-            final String value;
-            final String unit;
+        private CharSequence formatOutput(long speedKbps) {
+            float value;
+            String unit;
+            String formatString;
+
             switch (mUnits) {
                 case UNITS_KILOBITS:
-                    value = String.format("%d", kbps);
+                    value = (float) speedKbps;
                     unit = mContext.getString(R.string.kilobitspersecond_short);
+                    formatString = "%.1f";
                     break;
                 case UNITS_MEGABITS:
-                    value = String.format("%.1f", (float) kbps / 1000);
+                    value = (float) speedKbps / 1000f;
                     unit = mContext.getString(R.string.megabitspersecond_short);
+                    formatString = "%.2f";
                     break;
                 case UNITS_KILOBYTES:
-                    value = String.format("%d", kbps / 8);
+                    value = (float) speedKbps / 8f;
                     unit = mContext.getString(R.string.kilobytespersecond_short);
+                    formatString = "%.1f";
                     break;
                 case UNITS_MEGABYTES:
-                    value = String.format("%.2f", (float) kbps / 8000);
+                    value = (float) speedKbps / 8000f;
                     unit = mContext.getString(R.string.megabytespersecond_short);
+                    formatString = "%.2f";
                     break;
                 default:
-                    value = "unknown";
-                    unit = "unknown";
+                    value = 0;
+                    unit = "?";
+                    formatString = "%.2f";
                     break;
             }
 
-            if (mShowUnits) {
-                return value + " " + unit;
+            String valueStr = String.format(Locale.US, formatString, value);
+
+            if (!mShowUnits) {
+                SpannableString spannable = new SpannableString(valueStr);
+                if (mLayoutHorizontal) {
+                    spannable.setSpan(new TypefaceSpan("sans-serif-medium"), 0, valueStr.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+                } else {
+                    spannable.setSpan(new StyleSpan(Typeface.BOLD), 0, valueStr.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+                }
+                return spannable;
+            }
+
+            String separator = mLayoutHorizontal ? "" : "\n";
+            String fullText = valueStr + separator + unit;
+            
+            SpannableString spannable = new SpannableString(fullText);
+            int splitIndex = valueStr.length();
+
+            if (mLayoutHorizontal) {
+                spannable.setSpan(new TypefaceSpan("sans-serif-medium"), 0, fullText.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
             } else {
-                return value;
+                spannable.setSpan(new StyleSpan(Typeface.BOLD), 0, fullText.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+                spannable.setSpan(new RelativeSizeSpan(1.3f), 0, splitIndex, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+                spannable.setSpan(new RelativeSizeSpan(1.1f), splitIndex + 1, fullText.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+            }
+            
+            return spannable;
+        }
+
+        private void updateTrafficDrawable() {
+            if (!mShowArrow) {
+                setCompoundDrawablesWithIntrinsicBounds(null, null, null, null);
+                setPaddingRelative(0, 0, mArrowPadding, 0);
+                return;
+            }
+
+            setPaddingRelative(0, 0, 0, 0);
+
+            int drawableResId;
+            if (mMode == MODE_UPSTREAM_ONLY) {
+                drawableResId = R.drawable.stat_sys_network_traffic_up;
+            } else if (mMode == MODE_DOWNSTREAM_ONLY) {
+                drawableResId = R.drawable.stat_sys_network_traffic_down;
+            } else {
+                long totalSpeed = mTxKbps + mRxKbps;
+                if (totalSpeed <= 10) {
+                     drawableResId = R.drawable.stat_sys_network_traffic_updown;
+                } else if (mTxKbps > (mRxKbps + 10)) {
+                    drawableResId = R.drawable.stat_sys_network_traffic_up;
+                } else if (mRxKbps > (mTxKbps + 10)) {
+                    drawableResId = R.drawable.stat_sys_network_traffic_down;
+                } else {
+                    drawableResId = R.drawable.stat_sys_network_traffic_updown;
+                }
+            }
+
+            if (mDrawable == null) {
+                 mDrawable = getResources().getDrawable(drawableResId);
+            }
+            
+            Drawable d = getResources().getDrawable(drawableResId);
+            if (d != null) {
+                d.setColorFilter(mIconTint, PorterDuff.Mode.MULTIPLY);
+                setCompoundDrawablesWithIntrinsicBounds(null, null, d, null);
+                mDrawable = d;
             }
         }
     };
@@ -374,6 +447,12 @@ public class NetworkTraffic extends TextView {
                     false, this, UserHandle.USER_ALL);
             resolver.registerContentObserver(LineageSettings.Secure.getUriFor(
                     LineageSettings.Secure.NETWORK_TRAFFIC_SHOW_UNITS),
+                    false, this, UserHandle.USER_ALL);
+            resolver.registerContentObserver(LineageSettings.Secure.getUriFor(
+                    LineageSettings.Secure.NETWORK_TRAFFIC_LAYOUT),
+                    false, this, UserHandle.USER_ALL);
+            resolver.registerContentObserver(LineageSettings.Secure.getUriFor(
+                    LineageSettings.Secure.NETWORK_TRAFFIC_SHOW_ARROW),
                     false, this, UserHandle.USER_ALL);
         }
 
@@ -442,6 +521,16 @@ public class NetworkTraffic extends TextView {
         mUnits = LineageSettings.Secure.getIntForUser(resolver,
                 LineageSettings.Secure.NETWORK_TRAFFIC_UNITS, /* Mbps */ 1,
                 UserHandle.USER_CURRENT);
+        mShowUnits = LineageSettings.Secure.getIntForUser(resolver,
+                LineageSettings.Secure.NETWORK_TRAFFIC_SHOW_UNITS, 1,
+                UserHandle.USER_CURRENT) == 1;
+        
+        mLayoutHorizontal = LineageSettings.Secure.getIntForUser(resolver,
+                LineageSettings.Secure.NETWORK_TRAFFIC_LAYOUT, 0,
+                UserHandle.USER_CURRENT) == 1;
+        mShowArrow = LineageSettings.Secure.getIntForUser(resolver,
+                LineageSettings.Secure.NETWORK_TRAFFIC_SHOW_ARROW, 1,
+                UserHandle.USER_CURRENT) == 1;
 
         switch (mUnits) {
             case UNITS_KILOBITS:
@@ -461,12 +550,8 @@ public class NetworkTraffic extends TextView {
                 break;
         }
 
-        mShowUnits = LineageSettings.Secure.getIntForUser(resolver,
-                LineageSettings.Secure.NETWORK_TRAFFIC_SHOW_UNITS, 1,
-                UserHandle.USER_CURRENT) == 1;
-
         if (mMode != MODE_DISABLED) {
-            updateTrafficDrawable();
+            updateTrafficDrawableColor();
         }
         updateViewState();
     }
