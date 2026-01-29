@@ -233,18 +233,19 @@ public class NetworkTraffic extends TextView {
             long txBytes = 0;
             long rxBytes = 0;
             for (LinkProperties linkProperties : mLinkPropertiesMap.values()) {
-                final String iface = linkProperties.getInterfaceName();
-                if (iface == null) {
-                    continue;
+                for (String iface : linkProperties.getAllInterfaceNames()) {
+                    if (iface == null) {
+                        continue;
+                    }
+                    final long ifaceTxBytes = TrafficStats.getTxBytes(iface);
+                    final long ifaceRxBytes = TrafficStats.getRxBytes(iface);
+                    if (DEBUG) {
+                        Log.d(TAG, "adding stats from interface " + iface
+                                + " txbytes " + ifaceTxBytes + " rxbytes " + ifaceRxBytes);
+                    }
+                    txBytes += ifaceTxBytes;
+                    rxBytes += ifaceRxBytes;
                 }
-                final long ifaceTxBytes = TrafficStats.getTxBytes(iface);
-                final long ifaceRxBytes = TrafficStats.getRxBytes(iface);
-                if (DEBUG) {
-                    Log.d(TAG, "adding stats from interface " + iface
-                            + " txbytes " + ifaceTxBytes + " rxbytes " + ifaceRxBytes);
-                }
-                txBytes += ifaceTxBytes;
-                rxBytes += ifaceRxBytes;
             }
 
             final TetheringStats tetheringStats = getOffloadTetheringStats();
