@@ -84,6 +84,7 @@ public final class LineageSettings {
          * 1: Display the battery as a circle
          * 2: Display the battery as plain text
          * 3: Display the battery as OneUI
+         * 4: Display the battery as IOS
          * default: 0
          * @hide
          */
