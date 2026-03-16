@@ -220,8 +220,7 @@ public class TrustInterfaceService extends LineageSystemService {
 
     private boolean isWarningAllowed(int warning) {
         return (LineageSettings.Secure.getInt(mContext.getContentResolver(),
-                LineageSettings.Secure.TRUST_WARNINGS,
-                TrustInterface.TRUST_WARN_MAX_VALUE) & warning) != 0;
+                LineageSettings.Secure.TRUST_WARNINGS, 0) & warning) != 0;
     }
 
     private Pair<Integer, Integer> getNotificationStringsForFeature(int feature) {
