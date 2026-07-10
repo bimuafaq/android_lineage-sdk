@@ -3295,6 +3295,15 @@ public final class LineageSettings {
                 sBooleanValidator;
 
         /**
+         * Whether to show app volume rows in volume panel
+         * 0 = false, 1 = true
+         */
+        public static final String SHOW_APP_VOLUME = "show_app_volume";
+
+        public static final Validator SHOW_APP_VOLUME_VALIDATOR =
+                sBooleanValidator;
+
+        /**
          * Whether tethering is allowed to use VPN upstreams
          * 0 = false, 1 = true
          */
@@ -3418,6 +3427,7 @@ public final class LineageSettings {
             VALIDATORS.put(TRUST_NOTIFICATIONS, TRUST_NOTIFICATIONS_VALIDATOR);
             VALIDATORS.put(TRUST_RESTRICT_USB_KEYGUARD, TRUST_RESTRICT_USB_KEYGUARD_VALIDATOR);
             VALIDATORS.put(TRUST_WARNINGS, TRUST_WARNINGS_VALIDATOR);
+            VALIDATORS.put(SHOW_APP_VOLUME, SHOW_APP_VOLUME_VALIDATOR);
             VALIDATORS.put(VOLUME_PANEL_ON_LEFT, VOLUME_PANEL_ON_LEFT_VALIDATOR);
         }
     }
