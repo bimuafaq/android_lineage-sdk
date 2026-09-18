@@ -3258,6 +3258,16 @@ public final class LineageSettings {
                 new InclusiveIntegerRangeValidator(0, 1);
 
         /**
+         * Whether to show 4G instead of LTE
+         * 0 = show LTE, 1 = show 4G
+         * @hide
+         */
+        public static final String SHOW_FOURG = "show_fourg";
+
+        /** @hide */
+        public static final Validator SHOW_FOURG_VALIDATOR = sBooleanValidator;
+
+        /**
          * Enable displaying the Trust service's notifications
          * 0 = 0ff, 1 = on
          * @deprecated Rely on {@link lineageos.providers.TRUST_WARNINGS} instead
@@ -3435,6 +3445,7 @@ public final class LineageSettings {
             VALIDATORS.put(NETWORK_TRAFFIC_LAYOUT, NETWORK_TRAFFIC_LAYOUT_VALIDATOR);
             VALIDATORS.put(NETWORK_TRAFFIC_SHOW_ARROW, NETWORK_TRAFFIC_SHOW_ARROW_VALIDATOR);
             VALIDATORS.put(MOBILE_DATA_ICON_STYLE, MOBILE_DATA_ICON_STYLE_VALIDATOR);
+            VALIDATORS.put(SHOW_FOURG, SHOW_FOURG_VALIDATOR);
             VALIDATORS.put(TETHERING_ALLOW_VPN_UPSTREAMS, TETHERING_ALLOW_VPN_UPSTREAMS_VALIDATOR);
             VALIDATORS.put(TRUST_NOTIFICATIONS, TRUST_NOTIFICATIONS_VALIDATOR);
             VALIDATORS.put(TRUST_RESTRICT_USB_KEYGUARD, TRUST_RESTRICT_USB_KEYGUARD_VALIDATOR);
