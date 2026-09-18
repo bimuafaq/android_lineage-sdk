@@ -3247,6 +3247,17 @@ public final class LineageSettings {
         public static final Validator NETWORK_TRAFFIC_SHOW_ARROW_VALIDATOR = sBooleanValidator;
 
         /**
+         * Mobile data icon style
+         * 0 = separate, 1 = combined
+         * @hide
+         */
+        public static final String MOBILE_DATA_ICON_STYLE = "mobile_data_icon_style";
+
+        /** @hide */
+        public static final Validator MOBILE_DATA_ICON_STYLE_VALIDATOR =
+                new InclusiveIntegerRangeValidator(0, 1);
+
+        /**
          * Enable displaying the Trust service's notifications
          * 0 = 0ff, 1 = on
          * @deprecated Rely on {@link lineageos.providers.TRUST_WARNINGS} instead
@@ -3423,6 +3434,7 @@ public final class LineageSettings {
             VALIDATORS.put(NETWORK_TRAFFIC_SHOW_UNITS, NETWORK_TRAFFIC_SHOW_UNITS_VALIDATOR);
             VALIDATORS.put(NETWORK_TRAFFIC_LAYOUT, NETWORK_TRAFFIC_LAYOUT_VALIDATOR);
             VALIDATORS.put(NETWORK_TRAFFIC_SHOW_ARROW, NETWORK_TRAFFIC_SHOW_ARROW_VALIDATOR);
+            VALIDATORS.put(MOBILE_DATA_ICON_STYLE, MOBILE_DATA_ICON_STYLE_VALIDATOR);
             VALIDATORS.put(TETHERING_ALLOW_VPN_UPSTREAMS, TETHERING_ALLOW_VPN_UPSTREAMS_VALIDATOR);
             VALIDATORS.put(TRUST_NOTIFICATIONS, TRUST_NOTIFICATIONS_VALIDATOR);
             VALIDATORS.put(TRUST_RESTRICT_USB_KEYGUARD, TRUST_RESTRICT_USB_KEYGUARD_VALIDATOR);
