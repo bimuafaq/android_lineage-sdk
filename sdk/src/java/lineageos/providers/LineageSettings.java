@@ -3247,6 +3247,17 @@ public final class LineageSettings {
         public static final Validator NETWORK_TRAFFIC_SHOW_ARROW_VALIDATOR = sBooleanValidator;
 
         /**
+         * Whether to show network traffic inside system icons (after alarm_clock)
+         * 0 = between clock and notification icons (legacy left position)
+         * 1 = as a status icon after alarm_clock
+         * @hide
+         */
+        public static final String NETWORK_TRAFFIC_AS_STATUS_ICON = "network_traffic_as_status_icon";
+
+        /** @hide */
+        public static final Validator NETWORK_TRAFFIC_AS_STATUS_ICON_VALIDATOR = sBooleanValidator;
+
+        /**
          * Mobile data icon style
          * 0 = separate, 1 = combined
          * @hide
@@ -3444,6 +3455,7 @@ public final class LineageSettings {
             VALIDATORS.put(NETWORK_TRAFFIC_SHOW_UNITS, NETWORK_TRAFFIC_SHOW_UNITS_VALIDATOR);
             VALIDATORS.put(NETWORK_TRAFFIC_LAYOUT, NETWORK_TRAFFIC_LAYOUT_VALIDATOR);
             VALIDATORS.put(NETWORK_TRAFFIC_SHOW_ARROW, NETWORK_TRAFFIC_SHOW_ARROW_VALIDATOR);
+            VALIDATORS.put(NETWORK_TRAFFIC_AS_STATUS_ICON, NETWORK_TRAFFIC_AS_STATUS_ICON_VALIDATOR);
             VALIDATORS.put(MOBILE_DATA_ICON_STYLE, MOBILE_DATA_ICON_STYLE_VALIDATOR);
             VALIDATORS.put(SHOW_FOURG, SHOW_FOURG_VALIDATOR);
             VALIDATORS.put(TETHERING_ALLOW_VPN_UPSTREAMS, TETHERING_ALLOW_VPN_UPSTREAMS_VALIDATOR);
